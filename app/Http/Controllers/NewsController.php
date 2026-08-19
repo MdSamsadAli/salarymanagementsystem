@@ -56,7 +56,7 @@ class NewsController extends Controller
 
         Image::load($uploadedFile->getRealPath())
             ->fit(Fit::Contain, 1200, 1200)
-            ->quality(1)
+            ->quality(2)
             ->save($destinationPath);
 
         // $imagePath = null;
@@ -123,7 +123,7 @@ class NewsController extends Controller
 
             Image::load($uploadedFile->getRealPath())
                 ->fit(Fit::Contain, 1200, 1200)
-                ->quality(1)
+                ->quality(2)
                 ->save($destinationPath);
         }
 
