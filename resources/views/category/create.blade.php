@@ -15,17 +15,23 @@
         <div class="row">
             <div class="col-lg-6">
                 <label for="category">Category</label>
-                <input class="form-control" type="text" name="category"
+                <input class="form-control @error('category') is-invalid @enderror" type="text" name="category"
                     value="{{ old('category', $category->category ?? '') }}">
+
+                @error('category')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="col-lg-6">
                 @if (!isset($category))
                     <label for="parent_id">Parent</label>
                 @else
-                    <label for="parent_id">subcategory</label>
+                    <label for="parent_id">Subcategory</label>
                 @endif
-                <select name="parent_id" id="parent_id" class="form-control select2">
+
+                <select name="parent_id" id="parent_id"
+                    class="form-control select2 @error('parent_id') is-invalid @enderror">
                     <option value="">-- Select Parent Category --</option>
                     @include('category.partials.options', [
                         'categories' => $maincategory,
@@ -36,6 +42,10 @@
                             : [],
                     ])
                 </select>
+
+                @error('parent_id')
+                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                @enderror
             </div>
         </div>
 

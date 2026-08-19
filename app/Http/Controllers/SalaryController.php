@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\SalaryRequest;
 use App\Models\Employee;
 use App\Models\Salary;
 use Illuminate\Http\Request;
@@ -43,17 +44,18 @@ class SalaryController extends Controller
 
     public function show() {}
 
-    public function store(Request $request)
+    public function store(SalaryRequest $request)
     {
-        $data = $request->validate([
-            'employee_id' => 'required|exists:employees,id',
-            'basic_salary' => 'required|numeric|min:0',
-            'allowances' => 'nullable|numeric|min:0',
-            'effective_from' => 'required|date',
-        ]);
+        // $data = $request->validate([
+        //     'employee_id' => 'required|exists:employees,id',
+        //     'basic_salary' => 'required|numeric|min:0',
+        //     'allowances' => 'nullable|numeric|min:0',
+        //     'effective_from' => 'required|date',
+        // ]);
+
+        $data = $request->all();
 
         DB::transaction(function () use ($data) {
-            // Close any currently open salary record for this employee
             Salary::where('employee_id', $data['employee_id'])
                 ->whereNull('effective_to')
                 ->update(['effective_to' => Carbon::parse($data['effective_from'])->subDay()]);
@@ -79,14 +81,16 @@ class SalaryController extends Controller
         return view('salaries.edit', compact('salary', 'employees'));
     }
 
-    public function update(Request $request, Salary $salary)
+    public function update(SalaryRequest $request, Salary $salary)
     {
-        $data = $request->validate([
-            'basic_salary' => 'required|numeric|min:0',
-            'allowances' => 'nullable|numeric|min:0',
-            'effective_from' => 'required|date',
-            'effective_to' => 'nullable|date|after_or_equal:effective_from',
-        ]);
+        // $data = $request->validate([
+        //     'basic_salary' => 'required|numeric|min:0',
+        //     'allowances' => 'nullable|numeric|min:0',
+        //     'effective_from' => 'required|date',
+        //     'effective_to' => 'nullable|date|after_or_equal:effective_from',
+        // ]);
+
+        $data = $request->all();
 
         $salary->update([
             'basic_salary' => $data['basic_salary'],

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CategoryRequest;
 use App\Models\Category;
 use Illuminate\Http\Request;
 
@@ -28,13 +29,13 @@ class CategoryController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(CategoryRequest $request)
     {
-        // dd($request->all());
+        Category::create($request->validated());
 
-        $data = $request->all();
-        Category::create($data);
-        return redirect()->route('categories.index')->with('success', 'Category added Successfully');
+        return redirect()
+            ->route('categories.index')
+            ->with('success', 'Category added Successfully');
     }
 
     /**
@@ -59,29 +60,13 @@ class CategoryController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Category $category)
+    public function update(CategoryRequest $request, Category $category)
     {
-        // dd($id);
+        $category->update($request->validated());
 
-        $data = $request->validate([
-            'category'  => 'required|string|max:255',
-            'parent_id' => [
-                'nullable',
-                'exists:categories,id',
-                function ($attribute, $value, $fail) use ($category) {
-                    if ($value == $category->id) {
-                        $fail('A category cannot be its own parent.');
-                    }
-                    if ($value && in_array($value, $category->descendantIds())) {
-                        $fail('A category cannot become a child of its own subcategory.');
-                    }
-                },
-            ],
-        ]);
-
-        $category->update($data);
-
-        return redirect()->route('categories.index')->with('success', 'Category Updated Successfully');
+        return redirect()
+            ->route('categories.index')
+            ->with('success', 'Category Updated Successfully');
     }
 
     /**
