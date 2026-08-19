@@ -2,8 +2,7 @@
     Edit
 </a>
 
-<form action="{{ route('salaries.destroy', $salary) }}" method="POST" class="d-inline"
-    onsubmit="return confirm('Delete this record?')">
+<form action="{{ route('salaries.destroy', $salary) }}" method="POST" class="d-inline delete-form">
 
     @csrf
     @method('DELETE')

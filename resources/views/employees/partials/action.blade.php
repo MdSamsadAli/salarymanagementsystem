@@ -10,12 +10,11 @@
     Salary History
 </a>
 
-<form action="{{ route('employee.destroy', $employee) }}" method="POST" style="display:inline">
-
+<form action="{{ route('employee.destroy', $employee) }}" method="POST" class="delete-form" style="display:inline ">
     @csrf
     @method('DELETE')
 
-    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this employee?')">
+    <button type="submit" class="btn btn-danger btn-sm">
         Delete
     </button>
 

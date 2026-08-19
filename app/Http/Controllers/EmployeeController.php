@@ -129,7 +129,6 @@ class EmployeeController extends Controller
 
             return DataTables::eloquent($salaries)
                 ->addIndexColumn()
-
                 ->addColumn('previous_salary', function ($salary) {
 
                     $previous = $salary->employee->salaries()
@@ -195,28 +194,7 @@ class EmployeeController extends Controller
                 })
 
                 ->addColumn('action', function ($salary) {
-
-                    return '
-                    <a href="' . route('salaries.edit', $salary) . '"
-                       class="btn btn-sm btn-outline-primary">
-                        Edit
-                    </a>
-
-                    <form action="' . route('salaries.destroy', $salary) . '"
-                          method="POST"
-                          class="d-inline"
-                          onsubmit="return confirm(\'Delete this record?\')">
-
-                        ' . csrf_field() . '
-                        ' . method_field('DELETE') . '
-
-                        <button type="submit"
-                                class="btn btn-sm btn-outline-danger">
-                            Delete
-                        </button>
-
-                    </form>
-                ';
+                    return view('employees.partials.salary-actions', compact('salary'))->render();
                 })
 
                 ->rawColumns(['status', 'action'])
