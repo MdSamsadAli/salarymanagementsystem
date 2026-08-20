@@ -18,73 +18,15 @@
         @endif
 
         <div class="table-responsive">
-
-            <table id="employees-table" class="table table-bordered table-striped">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Name</th>
-                        <th>Designation</th>
-                        <th>Date of Joining</th>
-                        <th>Current Gross Salary</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-            </table>
-
+            {{ $dataTable->table(['class' => 'table table-bordered table-striped w-100']) }}
         </div>
 
     </div>
 @endsection
 
-
 @push('styles')
 @endpush
 
 @push('scripts')
-    
-
-    <script>
-        $(document).ready(function() {
-
-            $('#employees-table').DataTable({
-                processing: true,
-                serverSide: true,
-
-                ajax: "{{ route('employee.index') }}",
-
-                columns: [{
-                        data: 'DT_RowIndex',
-                        name: 'DT_RowIndex',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'name',
-                        name: 'name'
-                    },
-                    {
-                        data: 'designation',
-                        name: 'designation'
-                    },
-                    {
-                        data: 'date_of_joining',
-                        name: 'date_of_joining'
-                    },
-                    {
-                        data: 'current_gross_salary',
-                        name: 'currentSalary.gross_salary',
-                        orderable: false
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false
-                    }
-                ]
-            });
-
-        });
-    </script>
+    {{ $dataTable->scripts() }}
 @endpush

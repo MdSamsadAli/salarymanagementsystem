@@ -61,3 +61,7 @@
 .navbar-nav {
     overflow: visible !important;
 }
+
+.dropdown-menu {
+    padding: 0;
+}

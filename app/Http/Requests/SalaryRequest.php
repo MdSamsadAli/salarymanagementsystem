@@ -23,10 +23,11 @@ class SalaryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => 'required|exists:employees,id',
+            'employee_id' => 'nullable|exists:employees,id',
             'basic_salary' => 'required|numeric|min:0',
             'allowances' => 'nullable|numeric|min:0',
             'effective_from' => 'required|date',
+            'effective_to' => 'nullable|date|after_or_equal:effective_from',
         ];
     }
 }

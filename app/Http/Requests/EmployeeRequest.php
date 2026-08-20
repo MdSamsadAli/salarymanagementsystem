@@ -43,7 +43,7 @@ class EmployeeRequest extends FormRequest
             'date_of_joining' => [
                 'required',
                 'date',
-                'before_or_equal:today', // optional: cannot be future date
+                'before_or_equal:today',
             ],
 
             // Common extra fields (uncomment / add if you have them)

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\DataTables\EmployeeDataTable;
+use App\DataTables\SalaryHistoryDataTable;
 use App\Http\Requests\EmployeeRequest;
 use App\Models\Category;
 use App\Models\Employee;
@@ -31,36 +33,9 @@ class EmployeeController extends Controller
         ));
     }
 
-    public function index(Request $request)
+    public function index(EmployeeDataTable $dataTable)
     {
-        if ($request->ajax()) {
-
-            $employees = Employee::with('currentSalary')->latest();
-
-            return DataTables::eloquent($employees)
-                ->addIndexColumn()
-                ->editColumn(
-                    'date_of_joining',
-                    fn($employee) =>
-                    $employee->date_of_joining?->format('Y-m-d')
-                )
-                ->addColumn(
-                    'current_gross_salary',
-                    fn($employee) =>
-                    $employee->currentSalary
-                        ? number_format($employee->currentSalary->gross_salary, 2)
-                        : '—'
-                )
-                ->addColumn(
-                    'action',
-                    fn($employee) =>
-                    view('employees.partials.action', compact('employee'))->render()
-                )
-                ->rawColumns(['action'])
-                ->make(true);
-        }
-
-        return view('employees.index');
+        return $dataTable->render('employees.index');
     }
 
     public function create()
@@ -77,7 +52,7 @@ class EmployeeController extends Controller
         //     'date_of_joining' => 'required|date',
         // ]);
 
-        $data = $request->all();
+        $data = $request->validated();
         // dd($data);
 
         Employee::create($data);
@@ -87,7 +62,8 @@ class EmployeeController extends Controller
 
     public function show(Employee $employee)
     {
-        $employee->load('currentSalary');
+        $employee->current_salary = $employee->currentSalary();
+
         return view('employees.show', compact('employee'));
     }
 
@@ -105,7 +81,7 @@ class EmployeeController extends Controller
         //     'date_of_joining' => 'required|date',
         // ]);
 
-        $data = $request->all();
+        $data = $request->validated();
 
         $employee->update($data);
 
@@ -118,109 +94,32 @@ class EmployeeController extends Controller
         return redirect()->route('employee.index')->with('success', 'Employee deleted.');
     }
 
-    public function salaryHistory(Request $request, $id)
+    public function salaryHistory(Request $request, $id, SalaryHistoryDataTable $dataTable)
     {
         $employee = Employee::findOrFail($id);
 
         if ($request->ajax()) {
-
-            $salaries = $employee->salaries()
-                ->orderByDesc('effective_from');
-
-            return DataTables::eloquent($salaries)
-                ->addIndexColumn()
-                ->addColumn('previous_salary', function ($salary) {
-
-                    $previous = $salary->employee->salaries()
-                        ->where('effective_from', '<', $salary->effective_from)
-                        ->orderByDesc('effective_from')
-                        ->first();
-
-                    return $previous
-                        ? number_format($previous->basic_salary, 2)
-                        : '—';
-                })
-
-                ->editColumn('basic_salary', function ($salary) {
-                    return number_format($salary->basic_salary, 2);
-                })
-
-                ->editColumn('allowances', function ($salary) {
-                    return number_format($salary->allowances, 2);
-                })
-
-                ->editColumn('gross_salary', function ($salary) {
-                    return number_format($salary->gross_salary, 2);
-                })
-
-                ->editColumn('effective_from', function ($salary) {
-                    return $salary->effective_from->format('Y-m-d');
-                })
-
-                ->editColumn('effective_to', function ($salary) {
-                    return $salary->effective_to
-                        ? $salary->effective_to->format('Y-m-d')
-                        : '—';
-                })
-
-                ->addColumn('status', function ($salary) {
-
-                    $today = now();
-
-                    $isCurrent =
-                        $salary->effective_from->lte($today) &&
-                        (
-                            is_null($salary->effective_to) ||
-                            $salary->effective_to->gte($today)
-                        );
-
-                    $isUpcoming = $salary->effective_from->gt($today);
-
-                    if ($isCurrent) {
-                        return '<span class="badge rounded-pill text-bg-success">
-                                Current
-                            </span>';
-                    }
-
-                    if ($isUpcoming) {
-                        return '<span class="badge rounded-pill text-bg-warning text-dark">
-                                Upcoming
-                            </span>';
-                    }
-
-                    return '<span class="badge rounded-pill text-bg-secondary">
-                            Past
-                        </span>';
-                })
-
-                ->addColumn('action', function ($salary) {
-                    return view('employees.partials.salary-actions', compact('salary'))->render();
-                })
-
-                ->rawColumns(['status', 'action'])
-                ->make(true);
+            return $dataTable->employee($employee)->ajax();
         }
+        // $today = \Carbon\Carbon::today();
 
+        // $currentSalary = $employee->salaries()
+        //     ->whereDate('effective_from', '<=', $today)
+        //     ->where(function ($q) use ($today) {
+        //         $q->whereNull('effective_to')
+        //             ->orWhereDate('effective_to', '>=', $today);
+        //     })
+        //     ->orderByDesc('effective_from')
+        //     ->first();
 
-        // Normal page request
+        // $upcomingSalary = $employee->salaries()
+        //     ->whereDate('effective_from', '>', $today)
+        //     ->orderBy('effective_from')
+        //     ->first();
+        $currentSalary = $employee->currentSalary();
+        $upcomingSalary = $employee->upcomingSalary();
 
-        $today = \Carbon\Carbon::today();
-
-        $currentSalary = $employee->salaries()
-            ->whereDate('effective_from', '<=', $today)
-            ->where(function ($q) use ($today) {
-                $q->whereNull('effective_to')
-                    ->orWhereDate('effective_to', '>=', $today);
-            })
-            ->orderByDesc('effective_from')
-            ->first();
-
-        $upcomingSalary = $employee->salaries()
-            ->whereDate('effective_from', '>', $today)
-            ->orderBy('effective_from')
-            ->first();
-
-        return view('employees.salary-history', compact(
+        return $dataTable->employee($employee)->render('employees.salary-history', compact(
             'employee',
             'currentSalary',
             'upcomingSalary'

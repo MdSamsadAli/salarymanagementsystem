@@ -34,9 +34,9 @@
 
                             <dt class="col-sm-4 text-muted fw-normal">Current Salary</dt>
                             <dd class="col-sm-8">
-                                @if ($employee->currentSalary)
+                                @if ($employee->current_salary)
                                     <span class="badge text-bg-success fs-6 fw-semibold">
-                                        {{ number_format($employee->currentSalary->gross_salary, 2) }}
+                                        {{ number_format($employee->current_salary->gross_salary, 2) }}
                                     </span>
                                 @else
                                     <span class="text-muted">—</span>

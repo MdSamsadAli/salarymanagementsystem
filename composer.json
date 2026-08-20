@@ -13,6 +13,8 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "spatie/image": "^3.9",
+        "yajra/laravel-datatables-buttons": "^12.3",
+        "yajra/laravel-datatables-html": "^12.7",
         "yajra/laravel-datatables-oracle": "^12.7"
     },
     "require-dev": {
@@ -87,7 +89,8 @@
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
-            "php-http/discovery": true
+            "php-http/discovery": true,
+            "wikimedia/composer-merge-plugin": true
         }
     },
     "minimum-stability": "stable",

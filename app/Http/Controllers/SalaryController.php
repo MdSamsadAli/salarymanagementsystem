@@ -8,57 +8,42 @@ use App\Models\Salary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class SalaryController extends Controller
 {
-    // public function index(Request $request)
-    // {
-    //     $query = Salary::with('employee')->orderByDesc('effective_from');
-
-    //     if ($request->filled('employee_id')) {
-    //         $query->where('employee_id', $request->employee_id);
-    //     }
-
-    //     if ($request->filled('status')) {
-    //         $request->status === 'current'
-    //             ? $query->whereNull('effective_to')
-    //             : $query->whereNotNull('effective_to');
-    //     }
-
-    //     $salaries = $query->paginate(15)->withQueryString();
-    //     $employees = Employee::orderBy('name')->get();
-
-    //     return view('salaries.index', compact('salaries', 'employees'));
-    // }
-
     public function create(Request $request)
     {
-        $employees = Employee::whereDoesntHave('salaries', function ($query) {
-            $query->whereNull('effective_to');
-        })->get();
+        $employees = Employee::orderBy('name')->get();
         $selectedEmployeeId = $request->query('employee_id');
 
         return view('salaries.create', compact('employees', 'selectedEmployeeId'));
     }
 
-
     public function show() {}
 
     public function store(SalaryRequest $request)
     {
-        // $data = $request->validate([
-        //     'employee_id' => 'required|exists:employees,id',
-        //     'basic_salary' => 'required|numeric|min:0',
-        //     'allowances' => 'nullable|numeric|min:0',
-        //     'effective_from' => 'required|date',
-        // ]);
-
-        $data = $request->all();
+        $data = $request->validated();
 
         DB::transaction(function () use ($data) {
-            Salary::where('employee_id', $data['employee_id'])
+            $openSalary = Salary::where('employee_id', $data['employee_id'])
                 ->whereNull('effective_to')
-                ->update(['effective_to' => Carbon::parse($data['effective_from'])->subDay()]);
+                ->orderByDesc('effective_from')
+                ->first();
+
+            if ($openSalary && Carbon::parse($data['effective_from'])->lte($openSalary->effective_from)) {
+                throw ValidationException::withMessages([
+                    'effective_from' => 'The effective date must be after the current salary\'s effective date ('
+                        . $openSalary->effective_from->format('Y-m-d') . ').',
+                ]);
+            }
+
+            if ($openSalary) {
+                $openSalary->update([
+                    'effective_to' => Carbon::parse($data['effective_from'])->subDay(),
+                ]);
+            }
 
             Salary::create([
                 'employee_id' => $data['employee_id'],
@@ -83,14 +68,25 @@ class SalaryController extends Controller
 
     public function update(SalaryRequest $request, Salary $salary)
     {
-        // $data = $request->validate([
-        //     'basic_salary' => 'required|numeric|min:0',
-        //     'allowances' => 'nullable|numeric|min:0',
-        //     'effective_from' => 'required|date',
-        //     'effective_to' => 'nullable|date|after_or_equal:effective_from',
-        // ]);
+        $data = $request->validated();
 
-        $data = $request->all();
+        $newFrom = Carbon::parse($data['effective_from']);
+        $newTo = isset($data['effective_to']) ? Carbon::parse($data['effective_to']) : null;
+
+        $overlaps = Salary::where('employee_id', $salary->employee_id)
+            ->where('id', '!=', $salary->id)
+            ->where(function ($q) use ($newFrom) {
+                $q->whereNull('effective_to')
+                    ->orWhere('effective_to', '>=', $newFrom);
+            })
+            ->when($newTo, fn($q) => $q->where('effective_from', '<=', $newTo))
+            ->exists();
+
+        if ($overlaps) {
+            throw ValidationException::withMessages([
+                'effective_from' => 'This date range overlaps with another salary record for this employee.',
+            ]);
+        }
 
         $salary->update([
             'basic_salary' => $data['basic_salary'],

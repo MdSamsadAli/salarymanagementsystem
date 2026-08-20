@@ -5,10 +5,10 @@
         <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
             <div>
                 <h2 class="fw-bold mb-1">Salary History</h2>
-                {{-- <p class="text-muted mb-0">
+                <p class="text-muted mb-0">
                     {{ $employee->name }} &middot; {{ $employee->designation ?? '—' }} &middot;
-                    Joined {{ $employee->date_of_joining->format('Y-m-d') }}
-                </p> --}}
+                    Joined <strong>{{ $employee->date_of_joining->format('Y-m-d') }}</strong>
+                </p>
             </div>
             <a href="{{ route('employee.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Back to Employees
@@ -60,7 +60,7 @@
                             </div>
                             <p class="text-muted small mt-3 mb-0">
                                 <i class="bi bi-calendar-check"></i>
-                                Effective since {{ $currentSalary->effective_from->format('Y-m-d') }}
+                                Effective since {{ \Carbon\Carbon::parse($currentSalary->effective_from)->format('Y-m-d') }}
                             </p>
                         @else
                             <p class="text-muted mb-0">No active salary record as of today.</p>
@@ -87,7 +87,8 @@
                             </div>
                             <p class="text-muted small mt-3 mb-0">
                                 <i class="bi bi-calendar-event"></i>
-                                Starting {{ $upcomingSalary->effective_from->format('Y-m-d') }}
+
+                                Starting {{ \Carbon\Carbon::parse($upcomingSalary->effective_from)->format('Y-m-d') }}
                             </p>
                         @else
                             <p class="text-muted mb-0">No increment scheduled.</p>
@@ -177,27 +178,7 @@
             <div class="card-body">
 
                 <div class="table-responsive">
-
-                    <table id="salary-history-table" class="table table-hover align-middle">
-
-                        <thead class="table-light">
-
-                            <tr>
-                                <th>#</th>
-                                <th>Previous Basic</th>
-                                <th>Basic Salary</th>
-                                <th>Allowances</th>
-                                <th>Gross</th>
-                                <th>Effective From</th>
-                                <th>Effective To</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-
-                        </thead>
-
-                    </table>
-
+                    {{ $dataTable->table(['class' => 'table table-hover align-middle']) }}
                 </div>
 
             </div>
@@ -208,62 +189,5 @@
 @endsection
 
 @push('scripts')
-    <script>
-        $('#salary-history-table').DataTable({
-
-            processing: true,
-            serverSide: true,
-
-            ajax: "{{ route('employee.salary-history', ['id' => $employee->id]) }}",
-
-            columns: [{
-                    data: 'DT_RowIndex',
-                    name: 'DT_RowIndex',
-                    orderable: false,
-                    searchable: false
-                },
-                {
-                    data: 'previous_salary',
-                    name: 'previous_salary',
-                    orderable: false
-                },
-                {
-                    data: 'basic_salary',
-                    name: 'basic_salary'
-                },
-                {
-                    data: 'allowances',
-                    name: 'allowances'
-                },
-                {
-                    data: 'gross_salary',
-                    name: 'gross_salary'
-                },
-                {
-                    data: 'effective_from',
-                    name: 'effective_from'
-                },
-                {
-                    data: 'effective_to',
-                    name: 'effective_to'
-                },
-                {
-                    data: 'status',
-                    name: 'status',
-                    orderable: false,
-                    searchable: false
-                },
-                {
-                    data: 'action',
-                    name: 'action',
-                    orderable: false,
-                    searchable: false
-                }
-            ],
-
-            order: [
-                [5, 'desc']
-            ]
-        });
-    </script>
+    {{ $dataTable->scripts() }}
 @endpush

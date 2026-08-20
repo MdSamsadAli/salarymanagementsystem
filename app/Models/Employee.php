@@ -20,17 +20,51 @@ class Employee extends Model
 
     public function salaries()
     {
-        return $this->hasMany(Salary::class);
+        return \DB::table('salaries')->where('employee_id', $this->id);
     }
+
 
     public function currentSalary()
     {
-        return $this->hasOne(Salary::class)
-            ->whereDate('effective_from', '<=', now())
-            ->where(function ($q) {
+        $today = now()->toDateString();
+
+        $salary = \DB::table('salaries')
+            ->where('employee_id', $this->id)
+            ->whereDate('effective_from', '<=', $today)
+            ->where(function ($q) use ($today) {
                 $q->whereNull('effective_to')
-                    ->orWhereDate('effective_to', '>=', now());
+                    ->orWhereDate('effective_to', '>=', $today);
             })
-            ->orderByDesc('effective_from');
+            ->orderByDesc('effective_from')
+            ->first();
+
+        if ($salary) {
+            $salary->effective_from = \Carbon\Carbon::parse($salary->effective_from);
+            $salary->effective_to = $salary->effective_to
+                ? \Carbon\Carbon::parse($salary->effective_to)
+                : null;
+        }
+
+        return $salary;
+    }
+
+    public function upcomingSalary()
+    {
+        $today = now()->toDateString();
+
+        $salary = \DB::table('salaries')
+            ->where('employee_id', $this->id)
+            ->whereDate('effective_from', '>', $today)
+            ->orderBy('effective_from')
+            ->first();
+
+        if ($salary) {
+            $salary->effective_from = \Carbon\Carbon::parse($salary->effective_from);
+            $salary->effective_to = $salary->effective_to
+                ? \Carbon\Carbon::parse($salary->effective_to)
+                : null;
+        }
+
+        return $salary;
     }
 }
