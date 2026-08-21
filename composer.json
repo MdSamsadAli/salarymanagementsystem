@@ -12,6 +12,7 @@
         "php": "^8.2",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
+        "nwidart/laravel-modules": "^12.0",
         "spatie/image": "^3.9",
         "yajra/laravel-datatables-buttons": "^12.3",
         "yajra/laravel-datatables-html": "^12.7",
@@ -81,6 +82,15 @@
     "extra": {
         "laravel": {
             "dont-discover": []
+        },
+        "merge-plugin": {
+            "include": [
+                "Modules/*/composer.json"
+            ],
+            "recurse": false,
+            "replace": false,
+            "merge-dev": true,
+            "merge-extra": false
         }
     },
     "config": {

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Modules\Attendance\Models\Attendance;
 
 class Employee extends Model
 {
@@ -66,5 +67,16 @@ class Employee extends Model
         }
 
         return $salary;
+    }
+
+
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function todayAttendance()
+    {
+        return $this->hasOne(Attendance::class)->whereDate('attendance_date', today());
     }
 }

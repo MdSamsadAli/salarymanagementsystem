@@ -26,6 +26,10 @@
                             href="{{ route('salaries.create') }}">Salary</a>
                     </li>
 
+                    <li class="{{ Request()->routeIs('attendance.index') ? 'active' : '' }}"><a
+                            href="{{ route('attendance.index') }}">Attendance</a>
+                    </li>
+
                     {{-- <li>
                         <a class="dropdown-item" href="{{ route('profile.edit') }}">
                             {{ __('Profile') }}

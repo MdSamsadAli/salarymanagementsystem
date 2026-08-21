@@ -18,7 +18,7 @@
         @endif
 
         <div class="table-responsive">
-            {{ $dataTable->table(['class' => 'table table-bordered table-striped w-100']) }}
+            {{ $dataTable->table(['class' => 'table table-hover table-bordered table-striped w-100']) }}
         </div>
 
     </div>

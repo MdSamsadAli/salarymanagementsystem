@@ -3,7 +3,9 @@
 namespace App\DataTables;
 
 use App\Models\Employee;
+use App\Models\Salary;
 use Illuminate\Database\Eloquent\Builder as QueryBuilder;
+use Modules\Attendance\Models\Attendance;
 use Yajra\DataTables\EloquentDataTable;
 use Yajra\DataTables\Html\Builder as HtmlBuilder;
 use Yajra\DataTables\Html\Button;
@@ -12,11 +14,6 @@ use Yajra\DataTables\Services\DataTable;
 
 class EmployeeDataTable extends DataTable
 {
-    /**
-     * Build the DataTable class.
-     *
-     * @param QueryBuilder<Employee> $query Results from query() method.
-     */
     public function dataTable(QueryBuilder $query): EloquentDataTable
     {
         return (new EloquentDataTable($query))
@@ -25,14 +22,20 @@ class EmployeeDataTable extends DataTable
             ->editColumn('current_gross_salary', fn($employee) => $employee->current_gross_salary
                 ? number_format($employee->current_gross_salary, 2)
                 : '—')
+            ->addColumn('today_attendance', fn($employee) => view('attendance::partials.status-badge', [
+                'status' => $employee->attendance_status,
+                'checkedInOnly' => $employee->attendance_check_in && !$employee->attendance_check_out,
+            ])->render())
+            ->addColumn('working_hours', fn($employee) => Attendance::formatWorkingHours(
+                $employee->attendance_check_in,
+                $employee->attendance_check_out
+            ))
             ->addColumn('action', fn($employee) => view('employees.partials.action', compact('employee'))->render())
-            ->rawColumns(['action'])
+            ->rawColumns(['today_attendance', 'action'])
             ->setRowId('id');
     }
 
     /**
-     * Get the query source of dataTable.
-     *
      * @return QueryBuilder<Employee>
      */
     public function query(Employee $model): QueryBuilder
@@ -46,28 +49,47 @@ class EmployeeDataTable extends DataTable
                 'employees.address',
                 'employees.designation',
                 'employees.date_of_joining',
-                'salaries.gross_salary as current_gross_salary',
+                'current_salaries.gross_salary as current_gross_salary',
+                'attendances.status as attendance_status',
+                'attendances.check_in as attendance_check_in',
+                'attendances.check_out as attendance_check_out',
             ])
-            ->leftJoin('salaries', function ($join) use ($today) {
-                $join->on('salaries.employee_id', '=', 'employees.id')
-                    ->whereRaw('DATE(salaries.effective_from) <= ?', [$today])
-                    ->where(function ($q) use ($today) {
-                        $q->whereNull('salaries.effective_to')
-                            ->orWhereRaw('DATE(salaries.effective_to) >= ?', [$today]);
-                    })
-                    ->whereRaw('salaries.effective_from = (
-                        SELECT MAX(s2.effective_from) FROM salaries s2
-                        WHERE s2.employee_id = employees.id
-                        AND DATE(s2.effective_from) <= ?
-                        AND (s2.effective_to IS NULL OR DATE(s2.effective_to) >= ?)
-                    )', [$today, $today]);
+            ->leftJoinSub(
+                $this->currentSalarySubquery($today),
+                'current_salaries',
+                fn($join) => $join->on('current_salaries.employee_id', '=', 'employees.id')
+            )
+            ->leftJoin('attendances', function ($join) use ($today) {
+                $join->on('attendances.employee_id', '=', 'employees.id')
+                    ->whereDate('attendances.attendance_date', $today);
             })
             ->latest('employees.created_at');
     }
 
     /**
-     * Optional method if you want to use the html builder.
+     * The single salary row per employee that is in effect on the given date.
      */
+    private function currentSalarySubquery(string $date): QueryBuilder
+    {
+        return Salary::query()
+            ->select('employee_id', 'gross_salary')
+            ->whereDate('effective_from', '<=', $date)
+            ->where(function ($q) use ($date) {
+                $q->whereNull('effective_to')
+                    ->orWhereDate('effective_to', '>=', $date);
+            })
+            ->whereIn('id', function ($sub) use ($date) {
+                $sub->selectRaw('MAX(id)')
+                    ->from('salaries as s2')
+                    ->whereColumn('s2.employee_id', 'salaries.employee_id')
+                    ->whereDate('s2.effective_from', '<=', $date)
+                    ->where(function ($q) use ($date) {
+                        $q->whereNull('s2.effective_to')
+                            ->orWhereDate('s2.effective_to', '>=', $date);
+                    });
+            });
+    }
+
     public function html(): HtmlBuilder
     {
         return $this->builder()
@@ -90,9 +112,6 @@ class EmployeeDataTable extends DataTable
             ]);
     }
 
-    /**
-     * Get the dataTable columns definition.
-     */
     public function getColumns(): array
     {
         return [
@@ -102,7 +121,6 @@ class EmployeeDataTable extends DataTable
                 ->printable(false)
                 ->width(40)
                 ->addClass('text-center'),
-            // Column::make('id'),
             Column::make('name'),
             Column::make('address'),
             Column::make('designation'),
@@ -111,6 +129,16 @@ class EmployeeDataTable extends DataTable
                 ->title('Current Gross Salary')
                 ->orderable(false)
                 ->searchable(false),
+            Column::computed('today_attendance')
+                ->title('Today')
+                ->orderable(false)
+                ->searchable(false)
+                ->addClass('text-center'),
+            Column::computed('working_hours')
+                ->title('Working Hours')
+                ->orderable(false)
+                ->searchable(false)
+                ->addClass('text-center'),
             Column::computed('action')
                 ->exportable(false)
                 ->printable(false)
@@ -119,9 +147,6 @@ class EmployeeDataTable extends DataTable
         ];
     }
 
-    /**
-     * Get the filename for export.
-     */
     protected function filename(): string
     {
         return 'Employee_' . date('YmdHis');

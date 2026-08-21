@@ -1,3 +1,5 @@
 {
-    "Attendance": true
+    "Attendance": true,
+    "Salary": true,
+    "Employee": true
 }
