@@ -65,4 +65,9 @@ class Attendance extends Model
 
         return $formatted;
     }
+
+    public static function formatTime(?string $time): string
+    {
+        return $time ? Carbon::parse($time)->format('h:i A') : '—';
+    }
 }

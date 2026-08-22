@@ -18,8 +18,8 @@ class AttendanceDataTable extends DataTable
         return (new EloquentDataTable($query))
             ->addIndexColumn()
             ->editColumn('designation', fn($row) => $row->designation ?? '—')
-            ->editColumn('check_in', fn($row) => $this->formatTime($row->check_in))
-            ->editColumn('check_out', fn($row) => $this->formatTime($row->check_out))
+            ->editColumn('check_in', fn($row) => Attendance::formatTime($row->check_in))
+            ->editColumn('check_out', fn($row) => Attendance::formatTime($row->check_out))
             ->addColumn('working_hours', fn($row) => Attendance::formatWorkingHours(
                 $row->check_in,
                 $row->check_out
@@ -89,8 +89,8 @@ class AttendanceDataTable extends DataTable
         return 'Attendance_' . date('YmdHis');
     }
 
-    private function formatTime(?string $time): string
-    {
-        return $time ? Carbon::parse($time)->format('h:i A') : '—';
-    }
+    // private function formatTime(?string $time): string
+    // {
+    //     return $time ? Carbon::parse($time)->format('h:i A') : '—';
+    // }
 }
